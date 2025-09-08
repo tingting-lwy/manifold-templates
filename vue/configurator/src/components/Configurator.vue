@@ -40,6 +40,25 @@
         :key="widgetIndex"
       >
         <h1>{{ widget.name }} Options</h1>
+        <el-row>
+          <el-col :span="6">Widget Theme</el-col>
+          <el-col :span="12">
+            <el-select
+              v-if="widget.widgetTheme"
+              v-model="widget.widgetTheme.value"
+              class="m-2"
+              placeholder="None"
+              size="small"
+            >
+              <el-option
+                v-for="item in widget.widgetTheme.options"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </el-col>
+        </el-row>
         <el-row v-for="(prop, key) in widget.props" :key="key">
           <el-col :span="6">{{ prop.name }}</el-col>
           <el-col :span="12">
@@ -79,17 +98,21 @@
             v-for="(widget, widgetIndex) in configuration?.widgets"
             :key="widgetIndex"
           >
-            {{`
-            <script src="${widget.javascript}"></script>
-            ` }}
+            <template v-for="js in widget.javascript">
+              {{`
+              <script src="${js}"></script>
+              ` }}
+            </template>
           </div>
           <div
             v-for="(widget, widgetIndex) in configuration?.widgets"
             :key="widgetIndex"
           >
-            {{`
-            <link ref="stylesheet" href="${widget.css}" />
-            ` }}
+            <template v-for="css in widget.css">
+              {{`
+              <link ref="stylesheet" href="${css}" />
+              ` }}
+            </template>
           </div>
         </div>
         <h2>Body</h2>
@@ -112,6 +135,7 @@
           v-if="widget.dataWidget"
           :id="`widget-${widgetIndex}`"
           :data-widget="widget.dataWidget"
+          :class="widget.widgetTheme ? widget.widgetTheme.value : ''"
         ></div>
         <!-- NOTE: don't load the other widgets since we're assuming mutation observer pattern -->
       </div>
@@ -252,13 +276,21 @@ export default class Configurator extends Vue {
   mounted(): void {
     // Add script an link
     for (const widget of this.configuration!.widgets) {
-      const script = document.createElement("script");
-      script.setAttribute("src", widget.javascript);
-      document.head.appendChild(script);
-      const link = document.createElement("link");
-      link.setAttribute("rel", "stylesheet");
-      link.setAttribute("href", widget.css);
-      document.head.append(link);
+      // for each string in widget.javascript array
+      for (let i = 0; i < widget.javascript.length; i++) {
+        const js = widget.javascript[i];
+        const script = document.createElement("script");
+        script.setAttribute("src", js);
+        document.head.appendChild(script);
+      }
+
+      for (let i = 0; i < widget.css.length; i++) {
+        const css = widget.css[i];
+        const link = document.createElement("link");
+        link.setAttribute("rel", "stylesheet");
+        link.setAttribute("href", css);
+        document.head.append(link);
+      }
     }
     this.updateDivOutput();
   }
